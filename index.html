@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Point Plot Game</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 0;
+      padding: 0;
+      min-height: 100vh;
+    }
+    h1 {
+      margin-top: 32px;
+      color: #333;
+    }
+    #game-container {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      padding: 32px 24px 24px 24px;
+      margin-top: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #graph {
+      background: #fafafa;
+      border: 2px solid #333;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      cursor: crosshair;
+    }
+    #prompt {
+      font-size: 1.2em;
+      margin-bottom: 16px;
+      color: #222;
+    }
+    #feedback {
+      font-size: 1.1em;
+      margin-top: 10px;
+      min-height: 24px;
+      color: #d32f2f;
+      font-weight: bold;
+    }
+    @media (max-width: 600px) {
+      #game-container { padding: 12px; }
+      #graph { width: 300px !important; height: 300px !important; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Point Plot Game</h1>
+  <div id="game-container">
+    <div id="prompt">Loading...</div>
+    <canvas id="graph" width="400" height="400"></canvas>
+    <div id="feedback"></div>
+  </div>
+  <script>
+    const canvas = document.getElementById('graph');
+    const ctx = canvas.getContext('2d');
+    const promptDiv = document.getElementById('prompt');
+    const feedbackDiv = document.getElementById('feedback');
+    const size = 400;
+    const min = -10;
+    const max = 10;
+    const step = 1;
+    const gridCount = max - min;
+    let target = { x: 0, y: 0 };
+
+    function drawGraph() {
+      ctx.clearRect(0, 0, size, size);
+      // Draw gridlines
+      ctx.strokeStyle = '#ddd';
+      ctx.lineWidth = 1;
+      for (let i = min; i <= max; i += step) {
+        // Vertical
+        let x = mapX(i);
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, size);
+        ctx.stroke();
+        // Horizontal
+        let y = mapY(i);
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(size, y);
+        ctx.stroke();
+      }
+      // Draw axes
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 2;
+      // y-axis
+      ctx.beginPath();
+      ctx.moveTo(mapX(0), 0);
+      ctx.lineTo(mapX(0), size);
+      ctx.stroke();
+      // x-axis
+      ctx.beginPath();
+      ctx.moveTo(0, mapY(0));
+      ctx.lineTo(size, mapY(0));
+      ctx.stroke();
+      // Draw axis labels
+      ctx.fillStyle = '#333';
+      ctx.font = '12px Arial';
+      for (let i = min; i <= max; i += step) {
+        if (i !== 0) {
+          // x labels
+          ctx.fillText(i, mapX(i) - 8, mapY(0) + 16);
+          // y labels
+          ctx.fillText(i, mapX(0) + 6, mapY(i) + 4);
+        }
+      }
+      // Draw origin label
+      ctx.fillText('0', mapX(0) + 6, mapY(0) + 16);
+    }
+
+    function mapX(x) {
+      return ((x - min) / (max - min)) * size;
+    }
+    function mapY(y) {
+      return size - ((y - min) / (max - min)) * size;
+    }
+
+    function randomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    function newTarget() {
+      target.x = randomInt(min, max);
+      target.y = randomInt(min, max);
+      promptDiv.textContent = `Plot the point (${target.x}, ${target.y})`;
+      feedbackDiv.textContent = '';
+      drawGraph();
+    }
+
+    function handleClick(e) {
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      // Snap to nearest integer grid point
+      let x = Math.round((mouseX / size) * (max - min) + min);
+      let y = Math.round(((size - mouseY) / size) * (max - min) + min);
+      // Clamp to bounds
+      x = Math.max(min, Math.min(max, x));
+      y = Math.max(min, Math.min(max, y));
+      // Draw the user's point
+      drawGraph();
+      ctx.beginPath();
+      ctx.arc(mapX(x), mapY(y), 8, 0, 2 * Math.PI);
+      ctx.fillStyle = '#1976d2';
+      ctx.fill();
+      // Check answer
+      if (x === target.x && y === target.y) {
+        feedbackDiv.style.color = '#388e3c';
+        feedbackDiv.textContent = 'Correct!';
+        setTimeout(newTarget, 1000);
+      } else {
+        feedbackDiv.style.color = '#d32f2f';
+        feedbackDiv.textContent = 'Incorrect, try again!';
+      }
+    }
+
+    canvas.addEventListener('click', handleClick);
+    drawGraph();
+    newTarget();
+  </script>
+</body>
+</html>
